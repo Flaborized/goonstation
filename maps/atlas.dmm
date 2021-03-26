@@ -11352,7 +11352,6 @@
 /obj/table/auto,
 /obj/item/clothing/gloves/latex,
 /obj/item/clothing/mask/surgical,
-/obj/item/clothing/under/scrub/blue,
 /obj/item/clothing/mask/surgical_shield,
 /turf/simulated/floor/bluewhite{
 	dir = 5
