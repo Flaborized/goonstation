@@ -3133,10 +3133,56 @@
 	ephedrine
 		name = "Ephedrine"
 		id = "ephedrine"
-		result = "ephedrine"
-		required_reagents = list("sugar" = 1, "oil" = 1, "hydrogen" = 1, "diethylamine" = 1)
-		result_amount = 3
+		required_reagents = list("sugar" = 0, "oil" = 0, "hydrogen" = 0, "diethylamine" = 0) //removed in on_reaction()
+		result_amount = 1
+		instant = FALSE
 		mix_phrase = "The solution fizzes and gives off toxic fumes."
+		stateful = TRUE
+		temperature_change = 0 //this changes if the reaction starts burning
+		reaction_icon_state = list("reaction_bubbles-1", "reaction_bubbles-2")
+		reaction_icon_color = "#7a4e0c"
+		var/is_burning = FALSE
+
+		proc/start_burning()
+			is_burning = TRUE
+			temperature_change = 5
+			reaction_icon_state = list("reaction_fire-1", "reaction_fire-2")
+			reaction_icon_color = "#ffffff"
+
+		proc/stop_burning()
+			is_burning = FALSE
+			temperature_change = 0
+			reaction_icon_state = list("reaction_bubbles-1", "reaction_bubbles-2")
+			reaction_icon_color = "#7a4e0c"
+
+		on_reaction(var/datum/reagents/holder, var/created_volume)
+			if(is_burning && !holder.has_reagent("ff-foam"))
+				if(holder.has_reagent("water"))
+					stop_burning()
+					holder.del_reagent("water")
+				else
+					for (var/turf/T in holder.covered_turf())
+						fireflash_sm(T, 1, 600, 50)
+					for (var/reagent in required_reagents)
+						holder.remove_reagent(reagent, 1)
+
+			else
+				if(holder.get_reagent_amount("oil") > holder.get_reagent_amount("sugar"))
+					if(holder.has_reagent("ff-foam")) //you can use fire foam to run the reaction while in burn condition
+						holder.remove_reagent("ff-foam", 5)
+					else
+						start_burning()
+				if(!is_burning)
+					var/hydrogen_amount = round(holder.get_reagent_amount("hydrogen")) //amount of hydrogen determines how fast this goes
+					var/amount_to_produce
+					if(holder.get_reagent_amount("oil") > round(hydrogen_amount/5, 0.1)) //you only actually make as much ephedrine as you have oil...
+						amount_to_produce = 2 * round(hydrogen_amount/8, 1)				//...so you cannot just fill the beaker with 5000u hydrogen and 1u oil and make lots
+					else
+						amount_to_produce = 2 * round(holder.get_reagent_amount("oil")/8, 1)
+					holder.remove_reagent("sugar", clamp(round(hydrogen_amount/4, 0.1), 0.2, INFINITY))
+					holder.remove_reagent("oil", clamp(round(hydrogen_amount/8, 0.1), 0.1, INFINITY)) //you remove oil slower than sugar, which is more dramatic to manage with high hydrogen mixes
+					holder.remove_reagent("diethylamine", 0.5) //this one is static, so you save diethylamine with a faster setup
+					holder.add_reagent("ephedrine", amount_to_produce, temp_new = holder.total_temperature, chemical_reaction = TRUE)
 
 	methamphetamine // COGWERKS CHEM REVISION PROJECT: some sort of potent stimulant, could combine with teporone?
 		name = "Methamphetamine"
